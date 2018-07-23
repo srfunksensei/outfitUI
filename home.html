@@ -1,0 +1,285 @@
+<!doctype html>
+ 
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>jQuery UI Demo</title>
+  <link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" />
+  <script src="http://code.jquery.com/jquery-1.9.1.js"></script>
+  <script src="http://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
+
+  <style>
+  	
+  	.item { position: absolute; }
+
+
+  	#store{ clear: both; width: 100%; }
+
+  	#container {
+  		float: left;
+		background-color: #fff;
+		position: relative;
+		min-width: 300px;
+		height: 700px;
+		width: 60%;
+		border: 1px solid #ccc;
+		overflow: hidden;
+		z-index: 5;
+		margin: 20px;
+	}
+
+	#panel{
+		float: right;
+		width: 36%;
+	}
+
+	.selectNode { border: 1px dashed transparent; border-color: #ccc; }
+	.selectNode .ph_hint {
+		position: absolute;
+		top: 40%;
+		width: 100%;
+		text-shadow: -1px -1px 1px #eee,1px 1px 1px #eee;
+		left: 0;
+		color: #888;
+		text-align: center;
+		cursor: default;
+		z-index: 7;
+	}
+
+	.selectNode .bg {
+		background-color: #eee;
+		opacity: .5;
+		filter: alpha(opacity=50);
+		height: 100%;
+		width: 100%;
+		position: absolute;
+		left: 0;
+		top: 0;
+		display: none;
+	}
+
+	.ui-accordion .ui-accordion-content {
+      height: 305px !important;
+      padding: 1em 0 1em 0;
+	}
+
+	.ui-sortable-dragging {
+      z-index:9999;
+	}
+
+	.ui-autocomplete-category {
+	    font-weight: bold;
+	    padding: .2em .4em;
+	    margin: .8em 0 .2em;
+	    line-height: 1.5;
+	}
+
+  </style>
+
+  <script>
+  	  var autocompleteData = [];
+
+  	  $.widget( "custom.catcomplete", $.ui.autocomplete, {
+	    _renderMenu: function( ul, items ) {
+	      var that = this,
+	        currentCategory = "";
+	      $.each( items, function( index, item ) {
+	        if ( item.category != currentCategory ) {
+	          ul.append( "<li class='ui-autocomplete-category'>" + item.category + "</li>" );
+	          currentCategory = item.category;
+	        }
+	        that._renderItemData( ul, item );
+	      });
+	    }
+	  });
+
+	  $(function() {
+	  	  getImages();
+
+	      $( "#accordion" ).accordion({
+    		header : ' > div > h3',
+    		collapsible: true,
+            active: false,
+            autoHeight : false,
+            heightStyleType : "content"
+	      }).sortable({
+            axis: 'y',
+            handle: 'h3',
+            stop: function(event, ui) {
+            	ui.item.children('h3').triggerHandler('focusout');
+            }
+          }); 
+
+		  makeDroppable("droppable_top", "tops", 220);
+		  makeDroppable("droppable_shoes", "shoes", 220);
+		  makeDroppable("droppable_pants", "pants", 400);
+
+
+	      $( ".droppable" ).droppable({
+	        hoverClass: "ui-state-active",
+	        tolerance : "intersect",
+	        drop: function( event, ui ) {
+	        	if(!$( this ).hasClass( "ui-state-highlight" )){ 
+		          $(this).empty();
+		          $(this).append(ui.draggable.clone().css({'display':'block', 'margin':'auto', 'left':'28%', 'top' : '30%'}));
+	      		}
+
+	      		$( this ).addClass( "ui-state-highlight" );
+	        }
+	      });
+
+		  makeSortable("tops");
+		  makeSortable("pants");
+		  makeSortable("shoes");
+		  makeSortable("bags");
+		  makeSortable("accessories");
+		  makeSortable("jewelry");
+
+		  $( "#search" ).catcomplete({
+		     delay: 0,
+		     source: autocompleteData
+		  });
+	  });
+
+	  function makeDroppable(elemClass, accept, height){
+	  	$( "." + elemClass ).droppable({
+	        accept: "." + accept,
+	        hoverClass: "ui-state-active",
+	        tolerance: "fit",
+	        drop: function( event, ui ) {
+	        	if(!$( this ).hasClass( "ui-state-highlight" )){ 
+		          $(this).empty();
+		          $(this).append(ui.draggable.clone().css({'display':'block', 'margin':'auto', 'left':'28%', 'top' : '30%'}));
+	      		}
+
+	      		$( this ).addClass( "ui-state-highlight" );
+	      		if(height > 0){
+	            	$( this ).height("" + height + "px");
+	        	}
+	        }
+	      });
+	  }
+
+	  function makeSortable(elemId){
+	  	$("#" + elemId).sortable({placeholder: "ui-state-highlight"}).disableSelection();
+	  }
+
+	  
+	  function getImages(){
+		  var requestO = {};
+		  requestO.category_id = 11;
+		  requestO.page = 1;
+
+		  requestO.length = 50;
+		  getItemsForCategory('tops', requestO);
+		  
+		  requestO.category_id = 28;
+		  getItemsForCategory('pants', requestO);
+
+		  requestO.category_id = 41;
+		  getItemsForCategory('shoes', requestO);
+
+		  requestO.category_id = 35;
+		  getItemsForCategory('bags', requestO);
+
+		  requestO.category_id = 51;
+		  getItemsForCategory('accessories', requestO);
+
+		  requestO.category_id = 60;
+		  getItemsForCategory('jewelry', requestO);
+	 }
+
+	 function getItemsForCategory(cat, request){
+	  	$.ajax({
+	      	type: "GET",
+	      	url: "http://www.polyvore.com/cgi/search.editor_things",
+	      	data: {".in" : "json", ".out" : "json", "request" : JSON.stringify(request)},
+	      	dataType : "json",
+	      	cache: true
+		  }).done(
+			function(data) {
+				var items = data.result.items;
+	      		for(var i = 0; i<24; i++){
+	      			var img = $('<img>');
+	      			img.attr('class', 'draggable ' + cat);
+	      			img.attr('src', 'http://ak2.polyvoreimg.com/cgi/img-thing/size/s/tid/' + items[i].object_id + '.jpg');
+	      			img.appendTo("#" + cat);
+
+	      			autocompleteData.push({ label : items[i].title, category : cat.toUpperCase()});
+	      		}
+			}
+		  );
+	  	
+	  }
+  </script>
+</head>
+<body>
+
+	<div id="store">
+		<div id="container">
+			<div class="item selectNode droppable" style="left: 20px; top: 20px; z-index: 5; width: 274px; height: 359px;">
+				<div class="bg"></div>
+				<div class="ph_hint unselectable" unselectable="on" style="font-size: 1.5em; display: block; visibility: inherit;">Drag item here</div>
+			</div>
+
+			<div class="item selectNode droppable_top" style="left: 250px; top: 28px; z-index: 5; width: 274px; height: 220px;">
+				<div class="bg"></div>
+				<div class="ph_hint unselectable" unselectable="on" style="font-size: 1.5em; display: block; visibility: inherit;">Top</div>
+			</div>
+
+			<div class="item selectNode droppable_shoes" style="left: 60px; top: 350px; z-index: 5; width: 274px; height: 220px;">
+				<div class="bg"></div>
+				<div class="ph_hint unselectable" unselectable="on" style="font-size: 1.5em; display: block; visibility: inherit;">Shoes</div>
+			</div>
+
+			<div class="item selectNode droppable_pants" style="left: 350px; top: 280px; z-index: 5; width: 274px; height: 400px;">
+				<div class="bg"></div>
+				<div class="ph_hint unselectable" unselectable="on" style="font-size: 1.5em; display: block; visibility: inherit;">Pants</div>
+			</div>
+
+			<div class="item selectNode droppable" style="left: 500px; top: 90px; z-index: 5; width: 220px; height: 250px;">
+				<div class="bg"></div>
+				<div class="ph_hint unselectable" unselectable="on" style="font-size: 1.5em; display: block; visibility: inherit;">Drag item here</div>
+			</div>
+		</div>
+
+		<div id="panel">
+			<h3>Search</h3>
+			<input id="search" type="text" style="width: 220px; margin-bottom: 20px;"/> 
+
+			<div id="accordion" style="overflow: visible">
+				<div>
+					<h3>Shoes</h3>
+					<div id="shoes"></div>
+				</div>
+
+				<div>
+					<h3>Tops</h3>
+					<div id="tops"></div>
+				</div>
+
+				<div>
+					<h3>Pants</h3>
+					<div id="pants"></div>
+				</div>
+
+				<div>
+					<h3>Bags</h3>
+					<div id="bags"></div>
+				</div>
+
+				<div>
+					<h3>Accessories</h3>
+					<div id="accessories"></div>
+				</div>
+
+				<div>
+					<h3>Jewelry</h3>
+					<div id="jewelry"></div>
+				</div>
+			</div>
+		</div>
+	<div>
+	
+</body>
+</html>
